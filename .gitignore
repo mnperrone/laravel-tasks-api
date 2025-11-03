@@ -26,3 +26,8 @@ yarn-error.log
 *Zone.Identifier
 *.Zone.Identifier
 *.zone.identifier
+
+# Windows Zone identifier
+*Zone.Identifier
+*.Zone.Identifier
+*.zone.identifier
