@@ -7,7 +7,7 @@ use App\Models\User;
 
 /**
  * Task Policy
- * 
+ *
  * Defines authorization logic for Task operations.
  * Owners can update/delete their tasks, others can only view.
  */
@@ -26,6 +26,7 @@ class TaskPolicy
 
     /**
      * Determine whether the user can view the task.
+     * Only the owner or admin can view individual tasks.
      *
      * @param User $user
      * @param Task $task
@@ -33,7 +34,7 @@ class TaskPolicy
      */
     public function view(User $user, Task $task): bool
     {
-        return true;
+        return $user->id === $task->user_id || $user->hasRole('admin');
     }
 
     /**
@@ -49,7 +50,7 @@ class TaskPolicy
 
     /**
      * Determine whether the user can update the task.
-     * Only the owner can update their task.
+     * Only the owner or admin can update the task.
      *
      * @param User $user
      * @param Task $task
@@ -57,12 +58,12 @@ class TaskPolicy
      */
     public function update(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id;
+        return $user->id === $task->user_id || $user->hasRole('admin');
     }
 
     /**
      * Determine whether the user can delete the task.
-     * Only the owner can delete their task.
+     * Only the owner or admin can delete the task.
      *
      * @param User $user
      * @param Task $task
@@ -70,7 +71,7 @@ class TaskPolicy
      */
     public function delete(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id;
+        return $user->id === $task->user_id || $user->hasRole('admin');
     }
 
     /**
