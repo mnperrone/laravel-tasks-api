@@ -26,6 +26,10 @@ if [ -d "$APP_DIR" ]; then
   chown -R www-data:www-data "$APP_DIR"/storage "$APP_DIR"/bootstrap/cache || true
 fi
 
+# Marcar el directorio de la aplicación como "safe" para git dentro del contenedor.
+# Esto evita el error "detected dubious ownership in repository" cuando el código está montado
+# desde el host con un propietario distinto.
+git config --global --add safe.directory "$APP_DIR" || true
+
 # Ejecutar el comando pasado al contenedor (por ejemplo php-fpm)
 exec "$@"
-

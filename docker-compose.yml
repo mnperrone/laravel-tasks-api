@@ -4,7 +4,6 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: laravel-php
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
@@ -21,12 +20,10 @@ services:
       postgres:
         condition: service_healthy
 
-  # Nginx Service
   nginx:
     build:
       context: .
       dockerfile: docker/nginx/Dockerfile
-    container_name: laravel-nginx
     restart: unless-stopped
     ports:
       - "8080:80"
@@ -38,10 +35,8 @@ services:
     depends_on:
       - php
 
-  # PostgreSQL Service
   postgres:
     image: postgres:15
-    container_name: laravel-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -60,10 +55,8 @@ services:
       retries: 10
       start_period: 5s
 
-  # Redis Service
   redis:
     image: redis:7-alpine
-    container_name: laravel-redis
     restart: unless-stopped
     ports:
       - "6379:6379"

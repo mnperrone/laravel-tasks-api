@@ -1,6 +1,6 @@
 # Laravel SSR Challenge
 
-Aplicación REST API basada en Laravel 11 preparada para ejecutarse en contenedores Docker (PHP 8.3, Nginx y PostgreSQL). Esta guía explica cómo levantar el proyecto por primera vez en tu máquina de desarrollo.
+Aplicación REST API basada en Laravel 11 preparada para ejecutarse en contenedores Docker (PHP 8.3, Nginx, PostgreSQL y Redis). Esta guía explica cómo levantar el proyecto por primera vez en tu máquina de desarrollo.
 
 ## Requisitos
 
@@ -31,6 +31,20 @@ Este comando hace lo siguiente:
 - Ejecuta migraciones y seeders
 
 > Si prefieres ejecutar los pasos manualmente, sigue la sección "Arranque manual".
+
+## Nota sobre la base de datos por defecto
+
+El proyecto está configurado para usar PostgreSQL dentro de Docker (servicio `postgres` en `docker-compose.yml`) y la configuración por defecto apunta a `pgsql`.
+
+Qué significa esto:
+- Si usas `make install` o sigues el flujo con Docker, las migraciones y conexiones esperan una base de datos PostgreSQL.
+- La configuración en `config/database.php` usa `env('DB_CONNECTION', 'pgsql')`, por lo que puedes sobreescribir esto en tu archivo `.env` si necesitas otro driver.
+
+Cómo sobrescribir si necesitas otro motor:
+- Usar sqlite (local rápido): en `.env` pon `DB_CONNECTION=sqlite` y crea el archivo `database/database.sqlite`.
+- Usar MySQL: en `.env` pon `DB_CONNECTION=mysql` y ajusta `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` y `DB_PASSWORD`. Asegúrate también de que la extensión `pdo_mysql` esté disponible en PHP.
+
+Nota técnica: la imagen PHP incluida en `docker/php/Dockerfile` ya instala `pdo_pgsql`, así que si trabajas dentro de Docker no deberías tener que añadir drivers adicionales; si ejecutas PHP en tu máquina host, verifica que `pdo_pgsql` esté instalado.
 
 ## Arranque rápido con Docker (recomendado)
 
