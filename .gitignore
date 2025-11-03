@@ -21,3 +21,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Windows Zone identifier
+*Zone.Identifier
+*.Zone.Identifier
+*.zone.identifier
