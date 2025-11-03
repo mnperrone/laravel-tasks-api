@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Policies\TaskPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -29,19 +30,36 @@ class TaskPolicyTest extends TestCase
         parent::setUp();
         
         $this->policy = new TaskPolicy();
+        
+        // Create admin role for tests
+        Role::create(['name' => 'admin']);
     }
 
     /**
-     * Test any user can view tasks.
+     * Test owner can view their own task.
      *
      * @return void
      */
-    public function test_any_user_can_view_tasks(): void
+    public function test_owner_can_view_their_task(): void
     {
         $user = User::factory()->create();
-        $task = Task::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user->id]);
 
         $this->assertTrue($this->policy->view($user, $task));
+    }
+
+    /**
+     * Test non-owner cannot view another user's task.
+     *
+     * @return void
+     */
+    public function test_non_owner_cannot_view_another_users_task(): void
+    {
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user2->id]);
+
+        $this->assertFalse($this->policy->view($user1, $task));
     }
 
     /**
@@ -146,5 +164,50 @@ class TaskPolicyTest extends TestCase
         $task = Task::factory()->create(['user_id' => $user->id]);
 
         $this->assertTrue($this->policy->forceDelete($user, $task));
+    }
+
+    /**
+     * Test admin can view any task.
+     *
+     * @return void
+     */
+    public function test_admin_can_view_any_task(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $user = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user->id]);
+
+        $this->assertTrue($this->policy->view($admin, $task));
+    }
+
+    /**
+     * Test admin can update any task.
+     *
+     * @return void
+     */
+    public function test_admin_can_update_any_task(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $user = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user->id]);
+
+        $this->assertTrue($this->policy->update($admin, $task));
+    }
+
+    /**
+     * Test admin can delete any task.
+     *
+     * @return void
+     */
+    public function test_admin_can_delete_any_task(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $user = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user->id]);
+
+        $this->assertTrue($this->policy->delete($admin, $task));
     }
 }
