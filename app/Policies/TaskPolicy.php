@@ -58,7 +58,8 @@ class TaskPolicy
      */
     public function update(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id || $user->hasRole('admin');
+        // Only the owner can update their task (admins are not allowed to update)
+        return $user->id === $task->user_id;
     }
 
     /**
