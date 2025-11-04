@@ -51,7 +51,19 @@ class TaskController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $user = auth('api')->user();
-        $tasks = $this->taskService->getAllForUser($user);
+        // Pagination and optional filters
+        $perPage = (int) $request->query('per_page', 15);
+        $filters = [];
+
+        if ($request->has('priority')) {
+            $filters['priority'] = $request->query('priority');
+        }
+
+        if ($request->has('completed')) {
+            $filters['completed'] = $request->query('completed');
+        }
+
+        $tasks = $this->taskService->getPaginatedForUser($user, $perPage, $filters);
 
         return TaskResource::collection($tasks);
     }

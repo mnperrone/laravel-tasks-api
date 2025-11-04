@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Task Model
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Represents a task in the system with title, description, completion status,
  * and ownership.
  * 
- * @property int $id
+ * @property string $id (UUID)
  * @property string $title
  * @property string|null $description
  * @property bool $is_completed
@@ -25,6 +27,20 @@ class Task extends Model
     use HasFactory;
 
     /**
+     * The primary key is a UUID string, not an incrementing integer.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
+     * The primary key type.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -33,7 +49,9 @@ class Task extends Model
         'title',
         'description',
         'is_completed',
+        'priority',
         'user_id',
+        'id',
     ];
 
     /**
@@ -44,6 +62,19 @@ class Task extends Model
     protected $casts = [
         'is_completed' => 'boolean',
     ];
+
+    /**
+     * Boot model to generate UUID automatically on create.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $task) {
+            // Ensure the primary key 'id' is populated with a UUID for new tasks
+            if (empty($task->{$task->getKeyName()})) {
+                $task->{$task->getKeyName()} = (string) Str::uuid();
+            }
+        });
+    }
 
     /**
      * Get the user that owns the task.

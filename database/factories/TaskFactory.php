@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * Task Factory
@@ -29,10 +30,13 @@ class TaskFactory extends Factory
      */
     public function definition(): array
     {
+        // Generate a UUID for the primary key 'id' and other attributes.
         return [
+            'id' => (string) Str::uuid(),
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->optional()->paragraph(),
             'is_completed' => $this->faker->boolean(20),
+            'priority' => $this->faker->randomElement(['low','medium','high']),
             'user_id' => User::factory(),
         ];
     }

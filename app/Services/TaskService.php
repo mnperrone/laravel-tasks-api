@@ -57,9 +57,9 @@ class TaskService
      * @param int $perPage
      * @return LengthAwarePaginator
      */
-    public function getPaginatedForUser(User $user, int $perPage = 15): LengthAwarePaginator
+    public function getPaginatedForUser(User $user, int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
-        return $this->repository->paginate($perPage, $user->id);
+        return $this->repository->paginate($perPage, $user->id, $filters);
     }
 
     /**
