@@ -23,6 +23,15 @@ jobs:
 
     name: PHP ${{ matrix.php }}
 
+    # Set DB env for tests to use the Postgres service below
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: laravel
+      DB_USERNAME: laravel_user
+      DB_PASSWORD: secret
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,8 +40,13 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_pgsql, pgsql
           coverage: none
+
+      - name: Start Postgres service
+        uses: docker://postgres:15
+        # this step ensures the postgres image is pulled early; the official 'services' below will run in the job
+        if: false
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
@@ -43,5 +57,40 @@ jobs:
       - name: Generate app key
         run: php artisan key:generate
 
+      - name: Wait for Postgres to be ready
+        run: |
+          php -r '
+          $tries = 30;
+          for($i=0;$i<$tries;$i++){
+              try{
+                  $pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=laravel","laravel_user","secret");
+                  echo "postgres ready\n";
+                  exit(0);
+              }catch(Exception $e){
+                  sleep(1);
+              }
+          }
+          fwrite(STDERR, "Postgres did not become ready\n");
+          exit(1);
+          '
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
       - name: Execute tests
         run: vendor/bin/phpunit
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: laravel
+          POSTGRES_USER: laravel_user
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
