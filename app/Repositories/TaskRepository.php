@@ -99,6 +99,11 @@ class TaskRepository
      */
     public function create(array $data): Task
     {
+        // Ensure an UUID primary key is present for the task when creating
+        if (empty($data['id'])) {
+            $data['id'] = (string) \Illuminate\Support\Str::uuid();
+        }
+
         return Task::create($data);
     }
 

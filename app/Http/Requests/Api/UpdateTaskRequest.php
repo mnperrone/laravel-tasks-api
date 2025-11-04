@@ -32,6 +32,7 @@ class UpdateTaskRequest extends FormRequest
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string|max:5000',
             'is_completed' => 'sometimes|boolean',
+            'priority' => 'sometimes|in:low,medium,high',
         ];
     }
 
@@ -47,6 +48,7 @@ class UpdateTaskRequest extends FormRequest
             'title.max' => 'Task title cannot exceed 255 characters',
             'description.max' => 'Task description cannot exceed 5000 characters',
             'is_completed.boolean' => 'Task completion status must be true or false',
+            'priority.in' => 'Priority must be one of: low, medium, high',
         ];
     }
 }
