@@ -7,10 +7,11 @@ use App\Models\User;
 use App\Policies\TaskPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Spatie\Permission\Models\Role;
 
 /**
  * Task Policy Test
- * 
+ *
  * Unit tests for TaskPolicy authorization logic.
  */
 class TaskPolicyTest extends TestCase
@@ -27,21 +28,30 @@ class TaskPolicyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->policy = new TaskPolicy();
     }
 
     /**
-     * Test any user can view tasks.
+     * Test view permissions: only owner or admin can view a specific task.
      *
      * @return void
      */
-    public function test_any_user_can_view_tasks(): void
+    public function test_only_owner_or_admin_can_view_task(): void
     {
-        $user = User::factory()->create();
-        $task = Task::factory()->create();
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $admin = User::factory()->create();
 
-        $this->assertTrue($this->policy->view($user, $task));
+        // ensure admin role exists and assign to admin user
+        Role::create(['name' => 'admin']);
+        $admin->assignRole('admin');
+
+        $task = Task::factory()->create(['user_id' => $owner->id]);
+
+        $this->assertTrue($this->policy->view($owner, $task));
+        $this->assertFalse($this->policy->view($other, $task));
+        $this->assertTrue($this->policy->view($admin, $task));
     }
 
     /**
