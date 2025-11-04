@@ -38,6 +38,8 @@ return new class extends Migration
             $table->index('user_id');
             $table->index('is_completed');
             $table->index('priority');
+            // Ensure uniqueness per user for a given title so we can safely upsert
+            $table->unique(['user_id', 'title']);
         });
     }
 

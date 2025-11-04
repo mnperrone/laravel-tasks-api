@@ -179,12 +179,7 @@ class TaskController extends Controller
      */
     public function populate(Request $request): JsonResponse
     {
-        $apiKey = $request->header('X-API-KEY');
-
-        if (!$apiKey || $apiKey !== env('API_POPULATE_KEY')) {
-            return response()->json(['message' => 'Invalid API key'], 403);
-        }
-
+        // API key validation is handled by ApiKeyAuthMiddleware
         try {
             $response = Http::retry(3, 100)->get('https://jsonplaceholder.typicode.com/todos');
 
@@ -194,29 +189,38 @@ class TaskController extends Controller
             }
 
             $todos = $response->json();
-            $inserted = 0;
+
+            $user = auth('api')->user();
+            $now = now()->toDateTimeString();
+
+            // Prepare rows for bulk upsert. We must include the UUID primary key value
+            // because the tasks table uses a UUID primary without default.
+            $rows = [];
+            $titles = [];
 
             foreach ($todos as $todo) {
-                // Map external todo to local fields
                 $title = Str::limit($todo['title'] ?? 'Untitled', 255);
-                $data = [
+                $titles[] = $title;
+
+                $rows[] = [
+                    'id' => (string) Str::uuid(),
+                    'user_id' => $user->id,
                     'title' => $title,
                     'description' => null,
                     'is_completed' => !empty($todo['completed']),
+                    'priority' => 'medium',
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ];
-
-                // Use upsert-like behavior: find existing by title + user (current user)
-                $user = auth('api')->user();
-
-                $existing = Task::where('user_id', $user->id)->where('title', $title)->first();
-
-                if ($existing) {
-                    $existing->update($data);
-                } else {
-                    $this->taskService->createTask($data, $user);
-                    $inserted++;
-                }
             }
+
+            // Count existing tasks for this user with the provided titles to estimate inserted rows
+            $existingCount = Task::where('user_id', $user->id)->whereIn('title', array_unique($titles))->count();
+
+            // Perform bulk upsert using user_id + title as conflict target
+            Task::upsert($rows, ['user_id', 'title'], ['description', 'is_completed', 'priority', 'updated_at']);
+
+            $inserted = max(0, count($rows) - $existingCount);
 
             return response()->json(['inserted' => $inserted], 200);
         } catch (\Exception $e) {
