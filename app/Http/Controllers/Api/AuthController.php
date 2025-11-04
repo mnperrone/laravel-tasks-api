@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -73,7 +74,24 @@ class AuthController extends Controller
             ], 401);
         }
 
-        return $this->respondWithToken($token);
+        // Build a refresh token with a longer TTL (use config('jwt.refresh_ttl'))
+        $user = auth('api')->user();
+
+        // store original ttl and set refresh ttl temporarily
+        $factory = auth('api')->factory();
+        $originalTtl = $factory->getTTL();
+        $refreshTtl = (int) config('jwt.refresh_ttl', $originalTtl);
+
+        try {
+            $factory->setTTL($refreshTtl);
+            // add a claim to identify this as a refresh token (optional)
+            $refreshToken = auth('api')->claims(['typ' => 'refresh'])->fromUser($user);
+        } finally {
+            // restore original ttl
+            $factory->setTTL($originalTtl);
+        }
+
+        return $this->respondWithToken($token, $refreshToken);
     }
 
     /**
@@ -103,9 +121,27 @@ class AuthController extends Controller
      *
      * @return JsonResponse
      */
-    public function refresh(): JsonResponse
+    public function refresh(Request $request): JsonResponse
     {
-        return $this->respondWithToken(auth('api')->refresh());
+        // Accept a refresh token in the request body (refresh_token)
+        $refreshToken = $request->input('refresh_token');
+
+        if (empty($refreshToken)) {
+            return response()->json(['error' => 'refresh_token is required'], 422);
+        }
+
+        try {
+            // Set the token to the provided refresh token and refresh it into a new access token
+            $newAccessToken = auth('api')->setToken($refreshToken)->refresh();
+
+            return $this->respondWithToken($newAccessToken);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json(['error' => 'Refresh token expired'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json(['error' => 'Invalid refresh token'], 401);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Could not refresh token'], 500);
+        }
     }
 
     /**
@@ -114,13 +150,19 @@ class AuthController extends Controller
      * @param string $token
      * @return JsonResponse
      */
-    protected function respondWithToken(string $token): JsonResponse
+    protected function respondWithToken(string $token, ?string $refreshToken = null): JsonResponse
     {
-        return response()->json([
+        $response = [
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => auth('api')->user()
-        ]);
+        ];
+
+        if (!is_null($refreshToken)) {
+            $response['refresh_token'] = $refreshToken;
+        }
+
+        return response()->json($response);
     }
 }
