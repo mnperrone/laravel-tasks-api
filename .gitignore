@@ -9,6 +9,8 @@
 .env
 .env.backup
 .bak
+laravel
+*.sqlite
 .env.production
 .phpactor.json
 .phpunit.result.cache
