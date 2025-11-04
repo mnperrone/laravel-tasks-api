@@ -33,6 +33,7 @@ class TaskFactory extends Factory
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->optional()->paragraph(),
             'is_completed' => $this->faker->boolean(20),
+            'priority' => $this->faker->randomElement(['low','medium','high']),
             'user_id' => User::factory(),
         ];
     }

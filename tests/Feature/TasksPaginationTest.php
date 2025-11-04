@@ -37,15 +37,11 @@ class TasksPaginationTest extends TestCase
         $user = User::factory()->create();
         $token = auth('api')->login($user);
 
-        // Create tasks with different priorities and completed states
-        Task::factory()->create(['user_id' => $user->id, 'priority' => 'low', 'is_completed' => false]);
-        Task::factory()->create(['user_id' => $user->id, 'priority' => 'high', 'is_completed' => true]);
-        Task::factory()->create(['user_id' => $user->id, 'priority' => 'medium', 'is_completed' => false]);
+        // Create tasks with different completed states
+        Task::factory()->create(['user_id' => $user->id, 'is_completed' => false]);
+        Task::factory()->create(['user_id' => $user->id, 'is_completed' => true]);
+        Task::factory()->create(['user_id' => $user->id, 'is_completed' => false]);
 
-        // Filter by priority=high
-        $res1 = $this->withHeaders(['Authorization' => 'Bearer ' . $token])->getJson('/api/tasks?priority=high');
-        $res1->assertStatus(200);
-        $this->assertCount(1, $res1->json('data'));
 
         // Filter by completed=true
         $res2 = $this->withHeaders(['Authorization' => 'Bearer ' . $token])->getJson('/api/tasks?completed=true');

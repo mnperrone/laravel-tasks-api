@@ -33,6 +33,7 @@ class Task extends Model
         'title',
         'description',
         'is_completed',
+        'priority',
         'user_id',
     ];
 
