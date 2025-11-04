@@ -43,12 +43,26 @@ class TaskRepository
      * @param int|null $userId Filter by user ID
      * @return LengthAwarePaginator
      */
-    public function paginate(int $perPage = 15, ?int $userId = null): LengthAwarePaginator
+    public function paginate(int $perPage = 15, ?int $userId = null, array $filters = []): LengthAwarePaginator
     {
         $query = Task::with('user');
 
         if ($userId !== null) {
             $query->where('user_id', $userId);
+        }
+
+        // Optional filters
+        if (!empty($filters['priority'])) {
+            $query->where('priority', $filters['priority']);
+        }
+
+        if (isset($filters['completed'])) {
+            // Accept 'true'/'false' strings, 1/0, or boolean
+            $completed = $filters['completed'];
+            if (is_string($completed)) {
+                $completed = in_array(strtolower($completed), ['1', 'true', 'yes'], true);
+            }
+            $query->where('is_completed', (bool) $completed);
         }
 
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
