@@ -52,7 +52,7 @@ class TasksPopulateTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
             'X-API-KEY' => 'supersecretapikey',
-        ])->postJson('/api/tasks/populate');
+        ])->getJson('/api/tasks/populate');
 
         $response->assertStatus(200)->assertJsonStructure(['inserted']);
 
@@ -81,7 +81,7 @@ class TasksPopulateTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
             'X-API-KEY' => 'wrongkey',
-        ])->postJson('/api/tasks/populate');
+        ])->getJson('/api/tasks/populate');
 
         $response->assertStatus(403)->assertJson(['message' => 'Invalid API key']);
     }

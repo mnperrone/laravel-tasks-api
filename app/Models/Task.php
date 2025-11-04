@@ -85,4 +85,20 @@ class Task extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Override route model binding resolution to avoid querying the database
+     * with non-UUID values (for example the literal 'populate'). If the
+     * value is not a valid UUID, return null so the route will not attempt
+     * to resolve it to a Task model.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        // Basic UUID v4 pattern (hex with dashes) — keep permissive for variants
+        if (!is_string($value) || !preg_match('/^[0-9a-fA-F\-]{36}$/', $value)) {
+            return null;
+        }
+
+        return $this->where($field ?? $this->getRouteKeyName(), $value)->first();
+    }
 }

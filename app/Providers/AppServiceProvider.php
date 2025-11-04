@@ -40,5 +40,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Register policies
         Gate::policy(Task::class, TaskPolicy::class);
+
     }
 }
