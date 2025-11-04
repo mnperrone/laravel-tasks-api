@@ -21,8 +21,9 @@ class ApiKeyAuthMiddleware
     public function handle(Request $request, Closure $next)
     {
         $apiKey = $request->header('X-API-KEY');
+        $expectedKey = (string) config('services.tasks.populate_key');
 
-        if (!$apiKey || $apiKey !== env('API_POPULATE_KEY')) {
+        if (!$apiKey || $expectedKey === '' || $apiKey !== $expectedKey) {
             return response()->json(['message' => 'Invalid API key'], 403);
         }
 

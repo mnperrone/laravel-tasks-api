@@ -14,8 +14,8 @@ class TasksPopulateTest extends TestCase
 
     public function test_tasks_populate_inserts_and_updates_tasks_using_external_api()
     {
-        // Ensure API key env is set for the controller check
-        putenv('API_POPULATE_KEY=supersecretapikey');
+        // Configurar la clave esperada para el middleware
+        config(['services.tasks.populate_key' => 'supersecretapikey']);
 
         // Create a user and obtain a bearer token
         $user = User::factory()->create();
@@ -72,7 +72,7 @@ class TasksPopulateTest extends TestCase
 
     public function test_tasks_populate_requires_valid_api_key()
     {
-        putenv('API_POPULATE_KEY=supersecretapikey');
+    config(['services.tasks.populate_key' => 'supersecretapikey']);
 
         $user = User::factory()->create();
         $token = auth('api')->login($user);
