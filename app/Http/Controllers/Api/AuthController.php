@@ -135,11 +135,11 @@ class AuthController extends Controller
             $newAccessToken = auth('api')->setToken($refreshToken)->refresh();
 
             return $this->respondWithToken($newAccessToken);
-        } catch (\\Tymon\\JWTAuth\\Exceptions\\TokenExpiredException $e) {
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
             return response()->json(['error' => 'Refresh token expired'], 401);
-        } catch (\\Tymon\\JWTAuth\\Exceptions\\TokenInvalidException $e) {
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
             return response()->json(['error' => 'Invalid refresh token'], 401);
-        } catch (\\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json(['error' => 'Could not refresh token'], 500);
         }
     }
