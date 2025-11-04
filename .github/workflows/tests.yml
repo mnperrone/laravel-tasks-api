@@ -74,8 +74,8 @@ jobs:
           exit(1);
           '
 
-      - name: Run migrations
-        run: php artisan migrate --force
+      - name: Run migrations (fresh + seed)
+        run: php artisan migrate:fresh --seed --force
 
       - name: Execute tests
         run: vendor/bin/phpunit
