@@ -31,6 +31,10 @@ jobs:
       DB_DATABASE: laravel
       DB_USERNAME: laravel_user
       DB_PASSWORD: secret
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
 
     steps:
       - name: Checkout code
@@ -40,7 +44,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_pgsql, pgsql
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_pgsql, pgsql, redis
           coverage: none
 
       - name: Start Postgres service
@@ -74,6 +78,25 @@ jobs:
           exit(1);
           '
 
+      - name: Wait for Redis to be ready
+        run: |
+          php -r '
+          $tries = 30;
+          for ($i = 0; $i < $tries; $i++) {
+              try {
+                  $redis = new Redis();
+                  $redis->connect("127.0.0.1", 6379, 1);
+                  $redis->ping();
+                  echo "redis ready\n";
+                  exit(0);
+              } catch (Exception $e) {
+                  sleep(1);
+              }
+          }
+          fwrite(STDERR, "Redis did not become ready\n");
+          exit(1);
+          '
+
       - name: Run migrations (fresh + seed)
         run: php artisan migrate:fresh --seed --force
 
@@ -91,6 +114,16 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
