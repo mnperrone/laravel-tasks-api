@@ -1,176 +1,89 @@
-# Laravel SSR Challenge
+# Laravel SSR Challenge - IT ROCK
 
-Aplicación REST API basada en Laravel 11 preparada para ejecutarse en contenedores Docker (PHP 8.3, Nginx, PostgreSQL y Redis). Esta guía explica cómo levantar el proyecto por primera vez en tu máquina de desarrollo.
+[![Laravel](https://img.shields.io/badge/Laravel-11-ff2d20?logo=laravel&logoColor=white)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.3-777bb4?logo=php&logoColor=white)](https://www.php.net/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ed?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Tests](https://img.shields.io/badge/Tests-37%20passing-brightgreen)](#-pruebas)
 
-## Requisitos
+> API de tareas con autenticación JWT, cache en Redis y documentación Swagger lista para producción en contenedores.
 
-- Docker y Docker Compose instalados
-- Opcional: Make (para comandos de conveniencia)
-- Puerto 8080 libre para acceder vía navegador
+## 🧭 ¿De qué se trata?
+- **Propósito:** centralizar la gestión de tareas personales con roles, colas y caché para respuestas rápidas.
+- **Cómo funciona:** los usuarios se autentican vía JWT, consultan tareas cacheadas en Redis, disparan eventos que se registran en cola y consumen la API documentada con Swagger.
+- **Stack base:** Laravel 11, PHP 8.3, PostgreSQL, Redis, Nginx y Docker Compose.
 
-## Preparación (primer arranque)
+## ✨ Highlights
+- Login y refresh JWT con rate limiting (5/minuto).
+- Cache con etiquetado por usuario (TTL 10 min) e invalidación automática.
+- Eventos `TaskCreated` y `TaskCompleted` encolados para logging.
+- Recursos y políticas que garantizan autorización fina.
+- OpenAPI (L5 Swagger) disponible en `/api/documentation`.
 
-1. Clona el repositorio y sitúate en la carpeta del proyecto.
+## 🚀 Inicio rápido
+1. Clona el repo y copia el entorno: `cp .env.example .env`.
+2. Levanta la stack completa: `docker-compose up -d --build`.
+3. Instala dependencias y genera claves:
+   - `docker-compose exec php composer install`
+   - `docker-compose exec php php artisan key:generate`
+   - `docker-compose exec php php artisan jwt:secret`
+4. Migra y llena datos iniciales:
+   - `docker-compose exec php php artisan migrate --force`
+   - `docker-compose exec php php artisan db:seed --force`
+5. Abre `http://localhost:8080` y revisa la documentación en `http://localhost:8080/api/documentation`.
+6. En otra terminal, deja corriendo el worker de colas: `docker-compose exec php php artisan queue:work`.
+   - Agrega `--daemon` si prefieres dejarlo en segundo plano, o configura Supervisor dentro del contenedor para tenerlo siempre activo.
 
-2. Copia el archivo de entorno y personaliza si lo deseas:
+> Tip: `make install` automatiza todos los pasos anteriores si tienes Make disponible.
 
-```bash
-cp .env.example .env
-```
+## ⚙️ Setup automático con Make
+Si tienes `make` instalado, ejecuta `make install` desde la raíz del proyecto y se encarga de:
+- Construir las imágenes Docker necesarias.
+- Instalar dependencias de Composer dentro del contenedor PHP.
+- Generar las llaves de la aplicación y la clave JWT.
+- Ejecutar migraciones y seeders iniciales.
 
-3. (Opcional) Si quieres usar Makefile para automatizar pasos:
+Tras `make install`, únicamente debes iniciar el worker de colas con `docker-compose exec php php artisan queue:work` para procesar los eventos en segundo plano.
 
-```bash
-make install
-```
+## 🔧 Variables clave
+| Clave | Descripción |
+| --- | --- |
+| `JWT_SECRET` | token HS256 usado para emitir access/refresh tokens. |
+| `JWT_TTL` / `JWT_REFRESH_TTL` | duración (minutos) de tokens de acceso y refresh. |
+| `API_POPULATE_KEY` | API key obligatoria para `/api/tasks/populate` (`X-API-KEY`). |
+| `CACHE_STORE=redis` | activa cache etiquetada en Redis para listados de tareas. |
+| `QUEUE_CONNECTION=redis` | envía listeners a cola asíncrona (necesita `php artisan queue:work`). |
+| `L5_SWAGGER_CONST_HOST` | URL base consumida por la UI de Swagger. |
 
-Este comando hace lo siguiente:
-- Construye las imágenes Docker necesarias
-- Instala dependencias de Composer dentro del contenedor PHP
-- Genera claves de aplicación y JWT
-- Ejecuta migraciones y seeders
+## 📚 API esencial
+- `POST /api/auth/login` · recibirás `access_token` y `refresh_token`.
+- `POST /api/auth/refresh` · renueva sesión con rate limit compartido.
+- `GET /api/tasks` · paginación, filtros por prioridad y estado.
+- `POST /api/tasks` · crea tareas con UUID y prioridad (`low|medium|high`).
+- `POST /api/tasks/{id}/complete` / `incomplete` · marcan estados y disparan eventos.
 
-> Si prefieres ejecutar los pasos manualmente, sigue la sección "Arranque manual".
+Toda la especificación está en Swagger. Si editas endpoints, regenera con `docker-compose exec php php artisan l5-swagger:generate`.
 
-## Nota sobre la base de datos por defecto
+## 🌐 Integración externa
+- Ruta `GET /api/tasks/populate` sincroniza tareas desde https://jsonplaceholder.typicode.com/todos usando `Http::retry` para reintentos seguros.
+- Requiere token JWT válido **y** la cabecera `X-API-KEY` que debe coincidir con `API_POPULATE_KEY` en tu `.env`.
+- Inserta tareas con UUID propio, prioridad `medium` y evita duplicados reutilizando títulos para el usuario autenticado.
+- Ejemplo rápido:
+   ```bash
+   curl -X GET \
+      -H "Authorization: Bearer <ACCESS_TOKEN>" \
+      -H "X-API-KEY: ${API_POPULATE_KEY}" \
+      http://localhost:8080/api/tasks/populate
+   ```
+- La respuesta informa cuántos registros nuevos se crearon (`{"inserted": <n>}`); los listeners de eventos seguirán registrando actividad si luego las marcas como completadas.
 
-El proyecto está configurado para usar PostgreSQL dentro de Docker (servicio `postgres` en `docker-compose.yml`) y la configuración por defecto apunta a `pgsql`.
+## 🧪 Pruebas
+- Ejecuta todo: `docker-compose exec php php artisan test` (37 tests, 76 assertions).
+- Filtra suites: `docker-compose exec php php artisan test --filter=TaskApiTest`.
 
-Qué significa esto:
-- Si usas `make install` o sigues el flujo con Docker, las migraciones y conexiones esperan una base de datos PostgreSQL.
-- La configuración en `config/database.php` usa `env('DB_CONNECTION', 'pgsql')`, por lo que puedes sobreescribir esto en tu archivo `.env` si necesitas otro driver.
+## 🧰 Extras útiles
+- `docker-compose ps` · estado de contenedores.
+- `docker-compose exec php php artisan queue:work` · procesa listeners en background (usa `--daemon` o un supervisor para mantenerlo activo).
+- `make help` · lista comandos rápidos disponibles.
 
-Cómo sobrescribir si necesitas otro motor:
-- Usar sqlite (local rápido): en `.env` pon `DB_CONNECTION=sqlite` y crea el archivo `database/database.sqlite`.
-- Usar MySQL: en `.env` pon `DB_CONNECTION=mysql` y ajusta `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` y `DB_PASSWORD`. Asegúrate también de que la extensión `pdo_mysql` esté disponible en PHP.
-
-Nota técnica: la imagen PHP incluida en `docker/php/Dockerfile` ya instala `pdo_pgsql`, así que si trabajas dentro de Docker no deberías tener que añadir drivers adicionales; si ejecutas PHP en tu máquina host, verifica que `pdo_pgsql` esté instalado.
-
-## Arranque rápido con Docker (recomendado)
-
-1. Construye y levanta los contenedores:
-
-```bash
-# Construir imágenes
-docker-compose build
-
-# Levantar servicios en background
-docker-compose up -d
-```
-
-2. Instala dependencias de Composer (si no se ejecutó en el paso anterior):
-
-```bash
-docker-compose exec php composer install --prefer-dist --no-interaction
-```
-
-3. Genera la clave de la aplicación y la clave JWT:
-
-```bash
-docker-compose exec php php artisan key:generate
-docker-compose exec php php artisan jwt:secret
-```
-
-4. Ejecuta migraciones y seeders:
-
-```bash
-docker-compose exec php php artisan migrate --force
-docker-compose exec php php artisan db:seed --force
-```
-
-5. Abre tu navegador en: http://localhost:8080
-
-## Arranque manual (paso a paso)
-
-Si prefieres control completo, estos son los pasos detallados:
-
-```bash
-# Construir imágenes
-docker-compose build php nginx postgres
-
-# Levantar solo los servicios necesarios
-docker-compose up -d postgres php nginx
-
-# Instalar dependencias
-docker-compose exec php composer install --prefer-dist --no-interaction
-
-# Copiar .env si aún no está
-cp .env.example .env
-
-# Generar claves
-docker-compose exec php php artisan key:generate
-docker-compose exec php php artisan jwt:secret
-
-# Migrar y seedear
-docker-compose exec php php artisan migrate --force
-docker-compose exec php php artisan db:seed --force
-```
-
-## Nota importante sobre permisos
-
-El contenedor PHP incluye un entrypoint que ajusta automáticamente los permisos de las carpetas necesarias (`storage` y `bootstrap/cache`) al iniciar el contenedor. No es necesario cambiar permisos a mano en la mayoría de los casos; si encuentras errores de permisos, puedes ejecutar:
-
-```bash
-# Ver permisos dentro del contenedor PHP
-docker-compose exec php bash -lc "ls -la /var/www/html/storage && ls -la /var/www/html/bootstrap/cache"
-
-# Forzar ajuste (si es estrictamente necesario)
-docker-compose exec php bash -lc "chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && find /var/www/html/storage -type d -exec chmod 775 {} + && find /var/www/html/storage -type f -exec chmod 664 {} +"
-```
-
-## Comprobación rápida
-
-- Accede a la raíz de la app en: http://localhost:8080
-- Verifica los logs (dentro del contenedor PHP):
-
-```bash
-docker-compose exec php bash -lc "tail -n 200 storage/logs/laravel.log"
-```
-
-- Verifica estado de contenedores:
-
-```bash
-docker-compose ps
-```
-
-## API (resumen)
-
-- Autenticación (JWT):
-  - POST /api/auth/login
-  - POST /api/auth/logout
-  - POST /api/auth/refresh
-  - GET  /api/auth/me
-
-- Tareas (requieren token):
-  - GET    /api/tasks
-  - POST   /api/tasks
-  - GET    /api/tasks/{id}
-  - PUT    /api/tasks/{id}
-  - DELETE /api/tasks/{id}
-  - POST   /api/tasks/{id}/complete
-  - POST   /api/tasks/{id}/incomplete
-
-Consulta ejemplos de uso dentro del proyecto o usa Postman/curl para probar los endpoints.
-
-## Comandos Make disponibles
-
-```bash
-make help    # ver comandos
-make build   # construir imágenes
-make up      # levantar contenedores
-make down    # parar contenedores
-make shell   # abrir shell en el contenedor php
-make migrate # ejecutar migraciones
-make seed    # ejecutar seeders
-make test    # ejecutar tests
-```
-
-## Problemas comunes y solución rápida
-
-- Error 500 por permisos en vistas compiladas: revisar permisos de `storage/framework/views` y su propietario. El entrypoint del contenedor PHP debe encargarse de esto al arrancar.
-- Error de conexión a la base de datos: asegúrate de que PostgreSQL está arriba y que las credenciales en `.env` coinciden con `docker-compose.yml`.
-
-## Enlaces útiles
-
-- Laravel: https://laravel.com/docs
-- JWT Auth package: https://github.com/php-open-source-saver/jwt-auth
+## 📄 Licencia
+Distribuido bajo licencia [MIT](LICENSE).
