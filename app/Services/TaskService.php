@@ -228,7 +228,7 @@ class TaskService
      */
     protected function cacheStore(): CacheRepository
     {
-        return Cache::store(config('cache.default', 'redis'));
+        return Cache::store(config('cache.default'));
     }
 
     /**
