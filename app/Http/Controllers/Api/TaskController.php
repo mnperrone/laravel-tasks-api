@@ -55,7 +55,7 @@ class TaskController extends Controller
      *
      * @OA\Get(
      *     path="/api/tasks",
-    *     summary="Lista tareas del usuario autenticado",
+     *     summary="Lista tareas del usuario autenticado",
      *     tags={"Tasks"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
