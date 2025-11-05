@@ -7,15 +7,15 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Log Task Created Listener
- * 
- * Logs information when a new task is created.
- * Implements ShouldQueue to process asynchronously.
+ * Listener Log Task Created
+ *
+ * Registra información cuando se crea una nueva tarea.
+ * Implementa ShouldQueue para procesar de forma asíncrona.
  */
 class LogTaskCreated implements ShouldQueue
 {
     /**
-     * Create the event listener.
+     * Crea el listener del evento.
      *
      * @return void
      */
@@ -25,7 +25,7 @@ class LogTaskCreated implements ShouldQueue
     }
 
     /**
-     * Handle the event.
+     * Maneja el evento.
      *
      * @param TaskCreated $event
      * @return void

@@ -17,7 +17,7 @@ class TaskCompleted
     public Task $task;
 
     /**
-     * Create a new event instance.
+     * Crea una nueva instancia del evento.
      *
      * @param Task $task
      */

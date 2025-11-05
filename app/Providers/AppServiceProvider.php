@@ -15,7 +15,7 @@ use Illuminate\Support\ServiceProvider;
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * Registra los servicios de la aplicación.
      */
     public function register(): void
     {
@@ -23,11 +23,11 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Bootstrap any application services.
+     * Inicializa los servicios de la aplicación.
      */
     public function boot(): void
     {
-        // Register event listeners
+    // Registra los listeners de eventos
         Event::listen(
             TaskCreated::class,
             LogTaskCreated::class,
@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
             LogTaskCompleted::class,
         );
 
-        // Register policies
+    // Registra las policies
         Gate::policy(Task::class, TaskPolicy::class);
 
     }

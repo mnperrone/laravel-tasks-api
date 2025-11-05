@@ -9,11 +9,11 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Task Model
- * 
- * Represents a task in the system with title, description, completion status,
- * and ownership.
- * 
+ * Modelo Task
+ *
+ * Representa una tarea del sistema con título, descripción, estado de completado
+ * y propiedad.
+ *
  * @property string $id (UUID)
  * @property string $title
  * @property string|null $description
@@ -27,21 +27,21 @@ class Task extends Model
     use HasFactory;
 
     /**
-     * The primary key is a UUID string, not an incrementing integer.
+     * La clave primaria es un UUID, no un entero autoincremental.
      *
      * @var bool
      */
     public $incrementing = false;
 
     /**
-     * The primary key type.
+     * Tipo de la clave primaria.
      *
      * @var string
      */
     protected $keyType = 'string';
 
     /**
-     * The attributes that are mass assignable.
+     * Atributos asignables de forma masiva.
      *
      * @var array<int, string>
      */
@@ -55,7 +55,7 @@ class Task extends Model
     ];
 
     /**
-     * The attributes that should be cast.
+     * Atributos que deben convertirse de tipo.
      *
      * @var array<string, string>
      */
@@ -64,12 +64,12 @@ class Task extends Model
     ];
 
     /**
-     * Boot model to generate UUID automatically on create.
+     * Hook de arranque para generar el UUID automáticamente al crear.
      */
     protected static function booted(): void
     {
         static::creating(function (self $task) {
-            // Ensure the primary key 'id' is populated with a UUID for new tasks
+            // Asegura que la clave primaria 'id' tenga un UUID para las tareas nuevas
             if (empty($task->{$task->getKeyName()})) {
                 $task->{$task->getKeyName()} = (string) Str::uuid();
             }
@@ -77,7 +77,7 @@ class Task extends Model
     }
 
     /**
-     * Get the user that owns the task.
+     * Obtiene el usuario dueño de la tarea.
      *
      * @return BelongsTo
      */
@@ -87,14 +87,13 @@ class Task extends Model
     }
 
     /**
-     * Override route model binding resolution to avoid querying the database
-     * with non-UUID values (for example the literal 'populate'). If the
-     * value is not a valid UUID, return null so the route will not attempt
-     * to resolve it to a Task model.
+     * Sobrescribe el binding de rutas para evitar consultas con valores que no sean UUID
+     * (por ejemplo el literal 'populate'). Si el valor no es un UUID válido, retorna null
+     * para impedir que la ruta intente resolverlo como un modelo Task.
      */
     public function resolveRouteBinding($value, $field = null)
     {
-        // Basic UUID v4 pattern (hex with dashes) — keep permissive for variants
+    // Patrón básico de UUID v4 (hexadecimal con guiones); se mantiene permisivo para variantes
         if (!is_string($value) || !preg_match('/^[0-9a-fA-F\-]{36}$/', $value)) {
             return null;
         }

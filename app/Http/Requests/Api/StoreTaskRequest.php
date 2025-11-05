@@ -6,13 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Store Task Request
- * 
- * Validates data for creating a new task.
+ *
+ * Valida los datos para crear una nueva tarea.
  */
 class StoreTaskRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Determina si la persona usuaria está autorizada para realizar la solicitud.
      *
      * @return bool
      */
@@ -22,7 +22,7 @@ class StoreTaskRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Obtiene las reglas de validación que aplican a la solicitud.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
@@ -37,7 +37,7 @@ class StoreTaskRequest extends FormRequest
     }
 
     /**
-     * Get custom messages for validator errors.
+     * Obtiene los mensajes personalizados para errores de validación.
      *
      * @return array<string, string>
      */

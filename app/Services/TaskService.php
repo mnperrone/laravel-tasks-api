@@ -9,19 +9,20 @@ use App\Models\User;
 use App\Repositories\TaskRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Task Service
+ * Servicio de Tareas
  *
- * Contains business logic for task operations.
- * Validates ownership and handles task-related events.
+ * Contiene la lógica de negocio de las operaciones sobre tareas.
+ * Valida la propiedad y administra los eventos vinculados a tareas.
  */
 class TaskService
 {
     /**
-     * Task Repository instance.
+     * Instancia del repositorio de tareas.
      *
      * @var TaskRepository
      */
@@ -38,43 +39,63 @@ class TaskService
     }
 
     /**
-     * Get all tasks for a user.
-     * Uses cache (Redis) with 10 minutes TTL.
+     * Obtiene todas las tareas de un usuario.
+     * Usa caché (Redis) con un TTL de 10 minutos.
      */
     public function getAllForUser(User $user, ?bool $isCompleted = null): Collection
     {
-        $cacheKey = "tasks:user:{$user->id}" . ($isCompleted !== null ? ":completed:{$isCompleted}" : '');
+        $suffix = $isCompleted !== null ? 'completed' : 'all';
+        $context = [];
 
-        return Cache::remember($cacheKey, 600, function () use ($user, $isCompleted) {
-            return $this->repository->getAll($user->id, $isCompleted);
-        });
+        if ($isCompleted !== null) {
+            $context['completed'] = $isCompleted ? 'true' : 'false';
+        }
+
+        return $this->cacheStore()
+            ->tags($this->cacheTags($user->id))
+            ->remember(
+                $this->cacheKey($user->id, $suffix, $context),
+                $this->cacheTtl(),
+                fn () => $this->repository->getAll($user->id, $isCompleted)
+            );
     }
 
     /**
-     * Get paginated tasks for a user.
+     * Obtiene las tareas de un usuario paginadas.
      *
      * @param User $user
      * @param int $perPage
      * @return LengthAwarePaginator
      */
-    public function getPaginatedForUser(User $user, int $perPage = 15, array $filters = []): LengthAwarePaginator
+    public function getPaginatedForUser(User $user, int $perPage = 15, array $filters = [], int $page = 1): LengthAwarePaginator
     {
-        return $this->repository->paginate($perPage, $user->id, $filters);
+        $context = array_merge([
+            'per_page' => $perPage,
+            'page' => $page,
+        ], $filters);
+
+        return $this->cacheStore()
+            ->tags($this->cacheTags($user->id))
+            ->remember(
+                $this->cacheKey($user->id, 'paginate', $context),
+                $this->cacheTtl(),
+                fn () => $this->repository->paginate($perPage, $user->id, $filters, $page)
+            );
     }
 
     /**
-     * Find a task by ID.
+     * Busca una tarea por su ID.
      *
-     * @param int $id
+     * @param string $id
      * @return Task|null
      */
-    public function findById(int $id): ?Task
+    public function findById(string $id): ?Task
     {
         return $this->repository->find($id);
     }
 
     /**
-     * Create a new task.
+     * Crea una tarea nueva.
      *
      * @param array $data
      * @param User $user
@@ -86,18 +107,17 @@ class TaskService
 
         $task = $this->repository->create($data);
 
-        // Fire TaskCreated event
+    // Dispara el evento TaskCreated
         event(new TaskCreated($task));
 
-        // Invalidate cache for this user
-        Cache::forget("tasks:user:{$user->id}");
+        $this->flushTaskCache($user->id);
 
         return $task;
     }
 
     /**
-     * Update a task.
-     * Validates that the user owns the task.
+     * Actualiza una tarea.
+     * Valida que el usuario sea el propietario de la tarea.
      *
      * @param Task $task
      * @param array $data
@@ -107,22 +127,21 @@ class TaskService
      */
     public function updateTask(Task $task, array $data, User $user): Task
     {
-        // Check ownership
+        // Verifica la propiedad
         if (!$this->userOwnsTask($task, $user)) {
             abort(403, 'You do not have permission to update this task.');
         }
 
         $this->repository->update($task, $data);
 
-        // Invalidate cache for owner
-        Cache::forget("tasks:user:{$task->user_id}");
+        $this->flushTaskCache($task->user_id);
 
         return $task->fresh();
     }
 
     /**
-     * Delete a task.
-     * Validates that the user owns the task.
+     * Elimina una tarea.
+     * Valida que el usuario sea el propietario de la tarea.
      *
      * @param Task $task
      * @param User $user
@@ -131,7 +150,7 @@ class TaskService
      */
     public function deleteTask(Task $task, User $user): bool
     {
-        // Check ownership
+        // Verifica la propiedad
         if (!$this->userOwnsTask($task, $user)) {
             abort(403, 'You do not have permission to delete this task.');
         }
@@ -139,14 +158,14 @@ class TaskService
         $result = $this->repository->delete($task);
 
         if ($result) {
-            Cache::forget("tasks:user:{$task->user_id}");
+            $this->flushTaskCache($task->user_id);
         }
 
         return $result;
     }
 
     /**
-     * Mark a task as completed.
+     * Marca una tarea como completada.
      *
      * @param Task $task
      * @param User $user
@@ -155,24 +174,23 @@ class TaskService
      */
     public function markAsCompleted(Task $task, User $user): Task
     {
-        // Check ownership
+        // Verifica la propiedad
         if (!$this->userOwnsTask($task, $user)) {
             abort(403, 'You do not have permission to update this task.');
         }
 
         $this->repository->markAsCompleted($task);
 
-        // Fire TaskCompleted event
+    // Dispara el evento TaskCompleted
         event(new TaskCompleted($task->fresh()));
 
-        // Invalidate cache for owner
-        Cache::forget("tasks:user:{$task->user_id}");
+        $this->flushTaskCache($task->user_id);
 
         return $task->fresh();
     }
 
     /**
-     * Mark a task as incomplete.
+     * Marca una tarea como incompleta.
      *
      * @param Task $task
      * @param User $user
@@ -181,21 +199,20 @@ class TaskService
      */
     public function markAsIncomplete(Task $task, User $user): Task
     {
-        // Check ownership
+        // Verifica la propiedad
         if (!$this->userOwnsTask($task, $user)) {
             abort(403, 'You do not have permission to update this task.');
         }
 
         $this->repository->markAsIncomplete($task);
 
-        // Invalidate cache for owner
-        Cache::forget("tasks:user:{$task->user_id}");
+        $this->flushTaskCache($task->user_id);
 
         return $task->fresh();
     }
 
     /**
-     * Check if a user owns a task.
+     * Revisa si un usuario es dueño de una tarea.
      *
      * @param Task $task
      * @param User $user
@@ -204,5 +221,59 @@ class TaskService
     protected function userOwnsTask(Task $task, User $user): bool
     {
         return $task->user_id === $user->id;
+    }
+
+    /**
+     * Obtiene el store de caché que soporta tags (Redis).
+     */
+    protected function cacheStore(): CacheRepository
+    {
+        return Cache::store(config('cache.default'));
+    }
+
+    /**
+     * Construye los tags de caché para el usuario indicado.
+     */
+    protected function cacheTags(int $userId): array
+    {
+        return ["tasks:user:{$userId}"];
+    }
+
+    /**
+     * TTL en segundos para la caché de tareas.
+     */
+    protected function cacheTtl(): int
+    {
+        return 600; // 10 minutos
+    }
+
+    /**
+     * Construye una clave de caché para operaciones de usuario.
+     */
+    protected function cacheKey(int $userId, string $suffix, array $context = []): string
+    {
+        ksort($context);
+
+        return sprintf(
+            'tasks:user:%d:%s:%s',
+            $userId,
+            $suffix,
+            http_build_query($context)
+        );
+    }
+
+    /**
+     * Limpia todas las entradas en caché asociadas a las tareas del usuario.
+     */
+    protected function flushTaskCache(int $userId): void
+    {
+        $store = $this->cacheStore();
+
+        if (method_exists($store, 'tags')) {
+            $store->tags($this->cacheTags($userId))->flush();
+            return;
+        }
+
+        Cache::forget("tasks:user:{$userId}");
     }
 }

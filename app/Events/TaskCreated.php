@@ -8,23 +8,23 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Task Created Event
- * 
- * Fired when a new task is created in the system.
+ * Evento Task Created
+ *
+ * Se dispara cuando se crea una nueva tarea en el sistema.
  */
 class TaskCreated
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * The task instance.
+     * Instancia de la tarea.
      *
      * @var Task
      */
     public Task $task;
 
     /**
-     * Create a new event instance.
+     * Crea una nueva instancia del evento.
      *
      * @param Task $task
      * @return void

@@ -6,15 +6,15 @@ use App\Models\Task;
 use App\Models\User;
 
 /**
- * Task Policy
+ * Política de Tareas
  *
- * Defines authorization logic for Task operations.
- * Owners can update/delete their tasks, others can only view.
+ * Define la lógica de autorización para operar con tareas.
+ * Las personas dueñas pueden actualizar/eliminar sus tareas, el resto solo visualiza.
  */
 class TaskPolicy
 {
     /**
-     * Determine whether the user can view any tasks.
+     * Determina si el usuario puede ver cualquier tarea.
      *
      * @param User $user
      * @return bool
@@ -25,8 +25,8 @@ class TaskPolicy
     }
 
     /**
-     * Determine whether the user can view the task.
-     * Only the owner or admin can view individual tasks.
+     * Determina si el usuario puede ver la tarea.
+     * Solo la persona dueña o una persona administradora puede ver tareas individuales.
      *
      * @param User $user
      * @param Task $task
@@ -38,7 +38,7 @@ class TaskPolicy
     }
 
     /**
-     * Determine whether the user can create tasks.
+     * Determina si el usuario puede crear tareas.
      *
      * @param User $user
      * @return bool
@@ -49,8 +49,8 @@ class TaskPolicy
     }
 
     /**
-     * Determine whether the user can update the task.
-     * Only the owner or admin can update the task.
+     * Determina si el usuario puede actualizar la tarea.
+     * Solo la persona dueña o una administradora puede actualizar la tarea.
      *
      * @param User $user
      * @param Task $task
@@ -58,13 +58,13 @@ class TaskPolicy
      */
     public function update(User $user, Task $task): bool
     {
-        // Allow the owner or an admin to update the task
+    // Permite que la persona dueña o una administradora actualice la tarea
         return $user->id === $task->user_id || $user->hasRole('admin');
     }
 
     /**
-     * Determine whether the user can delete the task.
-     * Only the owner or admin can delete the task.
+     * Determina si el usuario puede eliminar la tarea.
+     * Solo la persona dueña o una administradora puede eliminarla.
      *
      * @param User $user
      * @param Task $task
@@ -76,7 +76,7 @@ class TaskPolicy
     }
 
     /**
-     * Determine whether the user can restore the task.
+     * Determina si el usuario puede restaurar la tarea.
      *
      * @param User $user
      * @param Task $task
@@ -88,7 +88,7 @@ class TaskPolicy
     }
 
     /**
-     * Determine whether the user can permanently delete the task.
+     * Determina si el usuario puede eliminar permanentemente la tarea.
      *
      * @param User $user
      * @param Task $task

@@ -6,6 +6,11 @@ use App\Events\TaskCompleted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Listener Log Task Completed
+ *
+ * Genera logs cuando una tarea cambia a estado completado.
+ */
 class LogTaskCompleted implements ShouldQueue
 {
     public function __construct()
@@ -13,6 +18,12 @@ class LogTaskCompleted implements ShouldQueue
         //
     }
 
+    /**
+     * Maneja el evento de tarea completada.
+     *
+     * @param TaskCompleted $event
+     * @return void
+     */
     public function handle(TaskCompleted $event): void
     {
         $task = $event->task;
