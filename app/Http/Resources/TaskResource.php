@@ -6,16 +6,16 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Task Resource
- * 
- * Transforms Task model data for API JSON responses.
- * 
+ * Recurso Task
+ *
+ * Transforma los datos del modelo Task para las respuestas JSON de la API.
+ *
  * @mixin \App\Models\Task
  */
 class TaskResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
+     * Transforma el recurso a un arreglo.
      *
      * @param Request $request
      * @return array<string, mixed>

@@ -10,25 +10,25 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 /**
- * Database Seeder
+ * Seeder principal
  *
- * Seeds the database with initial data including roles, permissions,
- * demo users, and sample tasks.
+ * Pobla la base de datos con datos iniciales: roles, permisos,
+ * usuarios demo y tareas de ejemplo.
  */
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Ejecuta el seed de la base de datos de la aplicación.
      *
      * @return void
      */
     public function run(): void
     {
-        // Create roles (idempotent)
+    // Crea los roles (idempotente)
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $userRole = Role::firstOrCreate(['name' => 'user']);
 
-        // Create permissions
+    // Crea los permisos
         $permissions = [
             'view tasks',
             'create tasks',
@@ -40,27 +40,27 @@ class DatabaseSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // Assign all permissions to admin
+    // Asigna todos los permisos al rol admin
         $adminRole->givePermissionTo(Permission::all());
 
-        // Assign limited permissions to user
+    // Asigna permisos acotados al rol user
         $userRole->givePermissionTo(['view tasks', 'create tasks', 'update tasks', 'delete tasks']);
 
-        // Create admin user (idempotent)
+    // Crea el usuario admin (idempotente)
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             ['name' => 'Admin User', 'password' => Hash::make('password')]
         );
         $admin->assignRole('admin');
 
-        // Create demo user (idempotent)
+    // Crea un usuario demo (idempotente)
         $demoUser = User::firstOrCreate(
             ['email' => 'demo@example.com'],
             ['name' => 'Demo User', 'password' => Hash::make('password')]
         );
         $demoUser->assignRole('user');
 
-        // Create sample tasks for demo user
+    // Crea tareas de ejemplo para el usuario demo
         Task::create([
             'title' => 'Complete project documentation',
             'description' => 'Write comprehensive documentation for the API endpoints',
@@ -82,7 +82,7 @@ class DatabaseSeeder extends Seeder
             'user_id' => $demoUser->id,
         ]);
 
-        // Create additional tasks for admin
+    // Crea tareas adicionales para el admin
         Task::create([
             'title' => 'Configure server settings',
             'description' => 'Update production server configuration',

@@ -11,10 +11,10 @@ use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
- * User Model
- * 
- * Represents a user in the system with JWT authentication support
- * and role-based permissions.
+ * Modelo User
+ *
+ * Representa a una persona usuaria del sistema con soporte JWT
+ * y permisos basados en roles.
  */
 class User extends Authenticatable implements JWTSubject
 {
@@ -22,7 +22,7 @@ class User extends Authenticatable implements JWTSubject
     use HasFactory, Notifiable, HasRoles;
 
     /**
-     * The attributes that are mass assignable.
+     * Atributos asignables de forma masiva.
      *
      * @var list<string>
      */
@@ -33,7 +33,7 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Atributos que deben ocultarse al serializar.
      *
      * @var list<string>
      */
@@ -43,7 +43,7 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Devuelve los atributos que deben convertirse de tipo.
      *
      * @return array<string, string>
      */
@@ -56,7 +56,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Get the identifier that will be stored in the subject claim of the JWT.
+     * Obtiene el identificador que se almacenará en el claim subject del JWT.
      *
      * @return mixed
      */
@@ -66,7 +66,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
+     * Retorna un arreglo clave-valor con claims personalizados para el JWT.
      *
      * @return array
      */
@@ -76,7 +76,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Get the tasks for the user.
+     * Obtiene las tareas asociadas a la persona usuaria.
      *
      * @return HasMany
      */

@@ -7,18 +7,18 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
- * Task Repository
- * 
- * Handles all database operations for Task model.
- * Provides abstraction layer for data access.
+ * Repositorio de Tareas
+ *
+ * Maneja todas las operaciones de base de datos del modelo Task.
+ * Proporciona una capa de abstracción para el acceso a datos.
  */
 class TaskRepository
 {
     /**
-     * Get all tasks with optional filtering.
+     * Obtiene todas las tareas con filtros opcionales.
      *
-     * @param int|null $userId Filter by user ID
-     * @param bool|null $isCompleted Filter by completion status
+     * @param int|null $userId Filtra por ID de usuario
+     * @param bool|null $isCompleted Filtra por estado de completado
      * @return Collection
      */
     public function getAll(?int $userId = null, ?bool $isCompleted = null): Collection
@@ -37,13 +37,13 @@ class TaskRepository
     }
 
     /**
-     * Get paginated tasks.
+     * Obtiene tareas paginadas.
      *
-     * @param int $perPage Number of items per page
-     * @param int|null $userId Filter by user ID
+     * @param int $perPage Cantidad de elementos por página
+     * @param int|null $userId Filtra por ID de usuario
      * @return LengthAwarePaginator
      */
-    public function paginate(int $perPage = 15, ?int $userId = null, array $filters = []): LengthAwarePaginator
+    public function paginate(int $perPage = 15, ?int $userId = null, array $filters = [], int $page = 1): LengthAwarePaginator
     {
         $query = Task::with('user');
 
@@ -51,13 +51,13 @@ class TaskRepository
             $query->where('user_id', $userId);
         }
 
-        // Optional filters
+        // Filtros opcionales
         if (!empty($filters['priority'])) {
             $query->where('priority', $filters['priority']);
         }
 
         if (isset($filters['completed'])) {
-            // Accept 'true'/'false' strings, 1/0, or boolean
+            // Acepta cadenas 'true'/'false', 1/0 o booleanos
             $completed = $filters['completed'];
             if (is_string($completed)) {
                 $completed = in_array(strtolower($completed), ['1', 'true', 'yes'], true);
@@ -65,41 +65,41 @@ class TaskRepository
             $query->where('is_completed', (bool) $completed);
         }
 
-        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+        return $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
     }
 
     /**
-     * Find a task by ID.
+     * Busca una tarea por ID.
      *
-     * @param int $id
+    * @param string $id
      * @return Task|null
      */
-    public function find(int $id): ?Task
+    public function find(string $id): ?Task
     {
         return Task::with('user')->find($id);
     }
 
     /**
-     * Find a task by ID or fail.
+     * Busca una tarea por ID o lanza excepción.
      *
-     * @param int $id
+    * @param string $id
      * @return Task
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function findOrFail(int $id): Task
+    public function findOrFail(string $id): Task
     {
         return Task::with('user')->findOrFail($id);
     }
 
     /**
-     * Create a new task.
+     * Crea una tarea nueva.
      *
      * @param array $data
      * @return Task
      */
     public function create(array $data): Task
     {
-        // Ensure an UUID primary key is present for the task when creating
+        // Asegura que haya un UUID como clave primaria al crear la tarea
         if (empty($data['id'])) {
             $data['id'] = (string) \Illuminate\Support\Str::uuid();
         }
@@ -108,7 +108,7 @@ class TaskRepository
     }
 
     /**
-     * Update a task.
+     * Actualiza una tarea.
      *
      * @param Task $task
      * @param array $data
@@ -120,7 +120,7 @@ class TaskRepository
     }
 
     /**
-     * Delete a task.
+     * Elimina una tarea.
      *
      * @param Task $task
      * @return bool|null
@@ -132,7 +132,7 @@ class TaskRepository
     }
 
     /**
-     * Mark a task as completed.
+     * Marca una tarea como completada.
      *
      * @param Task $task
      * @return bool
@@ -143,7 +143,7 @@ class TaskRepository
     }
 
     /**
-     * Mark a task as incomplete.
+     * Marca una tarea como incompleta.
      *
      * @param Task $task
      * @return bool
@@ -154,7 +154,7 @@ class TaskRepository
     }
 
     /**
-     * Get tasks by user ID.
+     * Obtiene tareas por ID de usuario.
      *
      * @param int $userId
      * @return Collection
