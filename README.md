@@ -1,4 +1,4 @@
-# Laravel SSR Challenge - IT ROCK
+# Laravel Tasks Api
 
 [![Laravel](https://img.shields.io/badge/Laravel-11-ff2d20?logo=laravel&logoColor=white)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.3-777bb4?logo=php&logoColor=white)](https://www.php.net/)
